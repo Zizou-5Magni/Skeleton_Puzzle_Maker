@@ -42,8 +42,9 @@ Already DONE:
 -Color and line selection displayed at top of page only.
 -each puzzle created for generate-n has all the qaulified sections (puzzle, character list, solution, word list)
 -For generate-N, I added a 20 second timer when generating multiple puzzles.
+-Added the web service provided.
 
-What's left: 
+What's LEFT: 
 -Adding the logic to PPT-1 and PPT-N
 -Power point will have 2 slides, one for puzzle and another for solution.
 -
