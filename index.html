@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8"/>
+		<meta
+		name="viewport" content="width=device-width, initial-scale=1"/>
+
+		<!-- Bootstrap CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous"/>
+		<link rel="stylesheet" href="css/styles.css"/>
+		<title>Skeleton Maker</title>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-12">
+					<div class="card border-primary mb-3">
+						<div class="card-header bg-primary text-center py-4">
+							<h3 class="mb-0">Skeleton Puzzle Maker</h3>
+						</div>
+						<div class="card-body">
+							<form target="_blank" action="SkeletonPuzzle.php" method="post">
+								<div class="mb-3 flex">
+									<label for="title" class="form-label">Title</label>
+									<input type="text" class="form-control" id="title" name="title" value="Title"/>
+								</div>
+								<div class="mb-3 flex">
+									<label for="subtitle" class="form-label">Subtitle</label>
+									<input type="text" class="form-control" id="subtitle" name="subtitle" value="Subtitle"/>
+								</div>
+
+								<div class="mb-3">
+									<label for="title" class="form-label">Input (Enter the words each on a separate line)</label>
+									<textarea name="wordInput" id="wordInput" rows="10" class="form-control d-block w-100" required>
+									</textarea>
+								</div>
+
+								<div class="w-100 text-center mt-5">
+									<!-- add PPT buttons here -->
+									<button >
+										PPT-1
+									</button>
+									<button >
+										PPT-N
+									</button>
+									
+									<button type="submit" class="btn-lg btn-primary" onclick="setMulti('false')">
+										Generate 1
+									</button>
+									<button type="submit" onclick="setMulti('true')" class="btn-lg btn-primary">
+										Generate-N
+									</button>
+									
+								</div>
+								<input type="hidden" name="multi" value="false" id="multi"/>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+	</body>
+
+</html>
+<script>
+	function setMulti(value) {
+document.getElementById("multi").value = value;
+}
+</script>

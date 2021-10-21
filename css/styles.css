@@ -1,0 +1,119 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+h6,
+h5,
+h4,
+h3,
+h2,
+h1 {
+  margin: 0;
+}
+.form-container,
+.panel {
+  width: 70vw;
+}
+table.skeleton tr td {
+  width: 48px;
+  height: 48px;
+  font-size: 1.875em;
+  vertical-align: middle;
+  text-align: center;
+}
+
+td.filled {
+  border: 2px solid #000000;
+  background-color: #eeeeee;
+}
+
+td.unfilled {
+  border: 0px solid #ffffff;
+  background-color: #ffffff;
+  visibility: hidden;
+}
+
+.warningmessage {
+  border: 2px solid red;
+  color: red;
+  overflow: auto;
+}
+
+/* my edits */
+
+.card-header * {
+  color: white;
+}
+label,
+.btn {
+  font-weight: bold;
+}
+
+.form-control {
+  border: 1px solid #0d6efd;
+}
+.border-blue {
+  border: 2px solid #0d6efd;
+}
+.blue {
+  background-color: #0d6efd;
+  color: white;
+}
+.border-red {
+  border: 2px solid #d21919;
+}
+.red {
+  background-color: #d21919;
+  color: white;
+}
+
+.border-left {
+  border-left: 1px solid #0d6efd;
+}
+.border-right {
+  border-right: 1px solid #0d6efd;
+}
+.card.border-primary {
+  border-width: 4px;
+}
+.card-header:first-child {
+  border-radius: calc(0.25rem - 4px) 0;
+}
+.accordion-button:not(.collapsed) {
+  color: black;
+  box-shadow: none;
+  border-radius: 0 !important;
+  border-bottom: 2px solid #0d6efd;
+  background-color: white;
+}
+.accordion-item {
+  border-radius: 0 !important;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flex label {
+  margin-bottom: 0;
+  margin-right: 10px;
+  align-self: center;
+}
+
+#options-container {
+  width: 300px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+.colorpicker-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
