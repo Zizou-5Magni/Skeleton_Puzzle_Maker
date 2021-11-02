@@ -142,6 +142,10 @@ function getThreeRandomWords(&$wordList)
 	<div class="container">
 		<div class="row">
 			<div class="col-12">
+			<div class="mx-4 py-3 text-center">
+					<button class="btn btn-primary" id="generatePPT">Generate PPT</button>
+				</div>
+
 				<div class="mt-4 py-3 text-center blue">
 					<h4>Options</h4>
 				</div>
