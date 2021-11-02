@@ -2,7 +2,7 @@
  A skeleton puzzle game that outputs puzzles and its solutions in two languages(English, Telugu). The user is able to provoke such puzzles in HTML and also have the option to download as PPT.
 
  Test list of words in English:
- hospital
+((hospital
 lowly
 plastic
 flow
@@ -13,11 +13,11 @@ matter
 giraffe
 curl
 impolite
-heady	
+heady))	
 
 
  Test list of words in Telugu:
-ఆసుపత్రి
+((ఆసుపత్రి
 నీచంగా
 ప్లాస్టిక్
 ప్రవాహం
@@ -28,7 +28,7 @@ heady
 జిరాఫీ
 వంకరగా
 అసభ్యకరమైన
-తలకాయ
+తలకాయ))
 
 Already DONE: 
 
@@ -45,6 +45,14 @@ Already DONE:
 -Added the web service provided.
 
 What's LEFT: 
+- place 3 words for telugu for generate & generate-N
+- unused words for telugu placed at bottom
+- English 1 puzzles --> PPT
+- English N puzzles --> PPT
+- Telugu 1 Puzzle
+- Telugu N Puzzles
+- Telugu 1 Puzzle --> PPT
+- Telugu N Puzzles --> PPT
+
 -Adding the logic to PPT-1 and PPT-N
 -Power point will have 2 slides, one for puzzle and another for solution.
--
