@@ -24,9 +24,12 @@ class Skeleton
 	private $solution = [];
 	private $puzzle = [];
 	private $placedLetters = [];
-	private $characterList = [];
+	private $characterList = [];	//add a character list 
 	private $firstWordSetting = 1;
 	private $directions = array("right", "down");
+
+
+	// private $wordProcessor;
 
 	//Setting Telugu to false and creating a Telugu list
 	private $telugu = false;
@@ -45,15 +48,17 @@ class Skeleton
 		$this->width = $width;
 		$this->height = $height;
 		$this->firstWordSetting = $type;
+		//removal of wordProcessor and using wordlist instead.
 		$this->wordList = $wordList;
 
+		//Checking for Telugu characters
 		if (!preg_match("/^[A-Za-z]+$/", $wordList[0])) { //if the word is not alphabetical then we assume it's in Telugu
 			$this->telugu = true;
 			$this->getTeluguCharacters();
 		} else {
 			$this->telugu = false;
 		}
-
+		//shuffle intial words
 		$this->shuffleCharacters();
 		// Adjust grid size based off longest word in case grid is too small
 		$this->adjustGridSize();
@@ -71,24 +76,24 @@ class Skeleton
 	{
 		foreach ($this->wordList as $word) {
 			$response = file_get_contents("https://indic-wp.thisisjava.com/api/getLogicalChars.php?string=" . $word . "&language=Telugu");
-			$response = preg_split('@(?={)@', $response)[1]; //remove weird characters from the start of the response, otherwise we can't decode the response.
+			$response = preg_split('@(?={)@', $response)[1]; //remove Telugu characters from the start of the response, otherwise we can't decode the response.
 			$response = json_decode($response); //convert the JSON response into an object
 			$splittedWord = $response->data;
 			$this->teluguWords[$word] = $splittedWord;
 		}
 	}
 
-
+	//Method to combine the keys and valus of an array to find it's longest string.
 	function getLongestStringInArray($array)
 	{
 		$mapping = array_combine($array, array_map('strlen', $array));
 		return array_keys($mapping, max($mapping));
 	}
 	/*
-	 * Adjust gridsize based off the longest word
+	 * Adjust gridsize based off the longest word but checking for Telugu words first.
 	 */
 
-
+	
 	private function adjustGridSize()
 	{
 		//get the longest word length from the list of words given
@@ -108,7 +113,7 @@ class Skeleton
 		}
 	}
 
-
+	//function to split words into character list array and then shuffle them. Checking for Telugu chars first. 
 	private function shuffleCharacters()
 	{
 		$characterList = [];
@@ -116,12 +121,12 @@ class Skeleton
 
 		if ($this->telugu) {
 			foreach ($this->teluguWords as $word => $characters) {
-				$characterList = array_merge($characterList, $characters);
+				$characterList = array_merge($characterList, $characters); //combine telugu chars into characterList arrays.
 			}
 		} else {
 
 			foreach ($this->wordList as $word) {
-				$chars = str_split($word);
+				$chars = str_split($word); //convert string words into character array
 
 
 				foreach ($chars as $char) {
