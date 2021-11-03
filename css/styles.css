@@ -19,7 +19,8 @@ h1 {
 .panel {
   width: 70vw;
 }
-table.skeleton tr td {
+table.skeleton tr td,
+table.skeleton-solution tr td {
   width: 48px;
   height: 48px;
   font-size: 1.875em;

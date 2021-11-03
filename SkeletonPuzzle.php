@@ -52,16 +52,16 @@ if ($multi == 'true') {
 
 		$telugu = $skeletonMaker->getIfTelugu();
 
-		if ($telugu) {
+		// if ($telugu) {
 
-			if (count($unplacedWords) <= 1) {
+		// 	if (count($unplacedWords) <= 1) {
 
-				$puzzles[] = $skeletonMaker;
-				$shuffledWords = array_merge($shuffledWords, $skeletonMaker->getUnplacedWords());
-			} else {
-				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
-			}
-		} else {
+		// 		$puzzles[] = $skeletonMaker;
+		// 		$shuffledWords = array_merge($shuffledWords, $skeletonMaker->getUnplacedWords());
+		// 	} else {
+		// 		$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
+		// 	}
+		// } else {
 
 			if (empty($unplacedWords)) {
 
@@ -70,7 +70,7 @@ if ($multi == 'true') {
 				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
 			}
 		}
-	}
+	// }
 	$unplacedWords = $shuffledWords;
 	//$shuffledWord contains the words that could not be placed in any puzzle
 } else {
