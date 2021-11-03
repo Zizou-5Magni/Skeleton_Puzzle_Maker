@@ -43,16 +43,18 @@ Already DONE:
 -each puzzle created for generate-n has all the qaulified sections (puzzle, character list, solution, word list)
 -For generate-N, I added a 20 second timer when generating multiple puzzles.
 -Added the web service provided.
+-English 1 puzzles --> PPT
+-English N puzzles --> PPT
+-Adding the logic to PPT-1 and PPT-N
+-Power point will have 2 slides, one for puzzle and another for solution.
 
 What's LEFT: 
 - place 3 words for telugu for generate & generate-N
 - unused words for telugu placed at bottom
-- English 1 puzzles --> PPT
-- English N puzzles --> PPT
 - Telugu 1 Puzzle
 - Telugu N Puzzles
 - Telugu 1 Puzzle --> PPT
 - Telugu N Puzzles --> PPT
 
--Adding the logic to PPT-1 and PPT-N
--Power point will have 2 slides, one for puzzle and another for solution.
+
+
