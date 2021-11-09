@@ -52,16 +52,16 @@ if ($multi == 'true') {
 
 		$telugu = $skeletonMaker->getIfTelugu();
 
-		// if ($telugu) {
+		if ($telugu) {
 
-		// 	if (count($unplacedWords) <= 1) {
+			if (count($unplacedWords) <= 1) {
 
-		// 		$puzzles[] = $skeletonMaker;
-		// 		$shuffledWords = array_merge($shuffledWords, $skeletonMaker->getUnplacedWords());
-		// 	} else {
-		// 		$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
-		// 	}
-		// } else {
+				$puzzles[] = $skeletonMaker;
+				$shuffledWords = array_merge($shuffledWords, $skeletonMaker->getUnplacedWords());
+			} else {
+				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
+			}
+		} else {
 
 			if (empty($unplacedWords)) {
 
@@ -70,7 +70,7 @@ if ($multi == 'true') {
 				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
 			}
 		}
-	// }
+		}
 	$unplacedWords = $shuffledWords;
 	//$shuffledWord contains the words that could not be placed in any puzzle
 } else {
@@ -116,6 +116,15 @@ function getThreeRandomWords(&$wordList)
 
 	return $elements;
 }
+
+$skeletons = [];
+foreach ($puzzles as $puzzle) {
+	$skeleton = new stdClass();
+	$skeleton->puzzle = $puzzle->getPuzzle();
+	$skeleton->solution = $puzzle->getSolution();
+	array_push($skeletons, $skeleton);
+}
+
 ?>
 <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN''http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
 <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
@@ -308,6 +317,11 @@ function getThreeRandomWords(&$wordList)
 	<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 	<script type="text/javascript" src="js/spectrum.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js" integrity="sha512-tVYBzEItJit9HXaWTPo8vveXlkK62LbA+wez9IgzjTmFNLMBO1BEYladBw2wnM3YURZSMUyhayPCoLtjGh84NQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>						
+	
+	<script>
+		// save all the skeleton data to a js variable to send to the server
+		const data = <?= json_encode($skeletons);  ?>
+	</script>
 	<script src="js/script.js"></script>
 </body>
 

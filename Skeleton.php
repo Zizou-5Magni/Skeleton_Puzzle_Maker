@@ -75,7 +75,7 @@ class Skeleton
 	function getTeluguCharacters()
 	{
 		foreach ($this->wordList as $word) {
-			$response = file_get_contents("https://indic-wp.thisisjava.com/api/getLogicalChars.php?string=" . $word . "&language=Telugu");
+			$response = file_get_contents("https://indic-wp.thisisjava.com/api/getLogicalChars.php?string=" . $word . '&' . "language=Telugu");
 			$response = preg_split('@(?={)@', $response)[1]; //remove Telugu characters from the start of the response, otherwise we can't decode the response.
 			$response = json_decode($response); //convert the JSON response into an object
 			$splittedWord = $response->data;
