@@ -65,7 +65,7 @@ function blankSquareCheckboxChange() {
   }
 }
 $("#generatePPT").click(function () {
-  sendForm(JSON.stringify(data))
+  sendForm(JSON.stringify(data));
 
 
 

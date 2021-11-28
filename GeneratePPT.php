@@ -8,6 +8,7 @@ use PhpOffice\PhpPresentation\PhpPresentation;
 use PhpOffice\PhpPresentation\Style\Alignment;
 use PhpOffice\PhpPresentation\Style\Color;
 use PhpOffice\PhpPresentation\Style\Border;
+use PhpOffice\PhpPresentation\Style\Borders;
 use PhpOffice\PhpPresentation\Style\Fill;
 
 
@@ -21,11 +22,6 @@ require_once 'libs/Common/src/Common/Autoloader.php';
 
 $json = file_get_contents('php://input');
 $skeletons = json_decode($json);
-
-// $data = json_decode($json);
-
-// $skeletons = $data->skeletons;
-// $solutions = $data->solutions;
 
 $presentation = new PhpPresentation();
 
@@ -62,25 +58,26 @@ foreach ($skeletons as $i => $skeleton) {
     $columns_count = count(array_keys((array)$rows[0]));
 
     // Create a shape (table)
-    $shape = $currentSlide->createTableShape($columns_count); //number of columns
-    $shape->setHeight(50 * $rows_count);
-    $shape->setOffsetX((960 - $columns_count * 50) / 2);
-    $shape->setOffsetY(200);
+    $tableShape = $currentSlide->createTableShape($columns_count); //number of columns
+    $tableShape->setHeight(50 * $rows_count);
+    $tableShape->setOffsetX((960 - $columns_count * 50) / 2);
+    $tableShape->setOffsetY(200);
 
 
     foreach ($rows as $i => $row) {
         // Add row
-        $tableRow = $shape->createRow();
+        $tableRow = $tableShape->createRow();
         $tableRow->setHeight(50);
 
         foreach ($row as $k => $col) {
             $oCell = $tableRow->nextCell();
             $oCell->setWidth(50);
-            if ($col === 0) {
+            if ($col === 0){
+            } else {
 
                 $oCell->getFill()->setFillType(Fill::FILL_SOLID)
-                    ->setStartColor(new Color('FF000000'))
-                    ->setEndColor(new Color('FF000000'));
+                    ->setStartColor(new Color('FFEEEEEE'))
+                    ->setEndColor(new Color('FFEEEEEE'));
             }
             $textRun = $oCell->createTextRun('');
             $textRun->getFont()
@@ -93,6 +90,7 @@ foreach ($skeletons as $i => $skeleton) {
                 ->setVertical(Alignment::VERTICAL_CENTER);
         }
     }
+    setCellsBorders($tableShape);
 }
 foreach ($skeletons as $i => $skeleton) {
     // Create slide
@@ -120,50 +118,125 @@ foreach ($skeletons as $i => $skeleton) {
         $columns_count = count(array_keys((array)$rows[0]));
     
         // Create a shape (table)
-        $shape = $currentSlide->createTableShape($columns_count); //number of columns
-        $shape->setHeight(50 * $rows_count);
-        $shape->setOffsetX((960 - $columns_count * 50) / 2);
-        $shape->setOffsetY(200);
+
+        $tableShape = $currentSlide->createTableShape($columns_count); //number of columns
+        $tableShape->setHeight(50 * $rows_count);
+        $tableShape->setOffsetX((960 - $columns_count * 50) / 2);
+        $tableShape->setOffsetY(200);
     
     
         foreach ($rows as $i => $row) {
             // Add row
-            $tableRow = $shape->createRow();
+            $tableRow = $tableShape->createRow();
             $tableRow->setHeight(50);
     
             foreach ($row as $k => $col) {
                 $oCell = $tableRow->nextCell();
                 $oCell->setWidth(50);
                 if ($col === 0) {
-                    $oCell->getBorders()->getLeft()->setLineStyle(Border::LINE_NONE);
-                    $oCell->getBorders()->getTop()->setLineStyle(Border::LINE_NONE);
-                    $oCell->getBorders()->getRight()->setLineStyle(Border::LINE_NONE);
-                    $oCell->getBorders()->getBottom()->setLineStyle(Border::LINE_NONE);
-                    $oCell->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->setStartColor(new Color('FF000000'))
-                        ->setEndColor(new Color('FF000000'));
-                } else {
-                    $oCell->getBorders()->getLeft()->setLineStyle(Border::LINE_SINGLE);
-                    $oCell->getBorders()->getTop()->setLineStyle(Border::LINE_SINGLE);
-                    $oCell->getBorders()->getRight()->setLineStyle(Border::LINE_SINGLE);
-                    $oCell->getBorders()->getBottom()->setLineStyle(Border::LINE_SINGLE);
-                    $oCell->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->setStartColor(new Color('FFF5F5F5'))
-                        ->setEndColor(new Color('FFF5F5F5'));
-                    $textRun = $oCell->createTextRun($col);
+
+                    $textRun = $oCell->createTextRun(' ');
                     $textRun->getFont()
                         ->setSize(20);
-    
-                    $oCell->getActiveParagraph()
-                        ->getAlignment()
-                        ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                        ->setVertical(Alignment::VERTICAL_CENTER);
+
+                    
+                } else {
+                   
+                    $oCell->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->setStartColor(new Color('FFEEEEEE'))
+                    ->setEndColor(new Color('FFEEEEEE'));
+                $textRun = $oCell->createTextRun($col);
+                $textRun->getFont()
+                    ->setSize(20);
+
                 }
+
+                $oCell->getActiveParagraph()
+                ->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER);
+
             }
         }
+
+        setCellsBorders($tableShape);
+    
+
+ 
+}
+
+
+function setCellsBorders($tableShape)
+{
+    $tableRows = $tableShape->getRows();
+    $startColor = new Color('FFEEEEEE');
+
+    foreach ($tableRows as $rowIndex => $row) {
+        $tableCells = $row->getCells();
+
+        foreach ($tableCells as $cellIndex => $cell) {
+            $borders = new Borders();
+            //if true  add white border
+            $left = true;
+            $top = true;
+            $right = true;
+            $bottom = true;
+
+            if ($cell->getFill()->getStartColor() == $startColor) { //if the cell contains a letter no white borders
+                $left = false;
+                $top = false;
+                $right = false;
+                $bottom = false;
+            }
+            if (($cellIndex + 1) < count($tableCells)) { //check if we aren't on the last cell of the row so we can check the next cell
+                $nextCell = $row->getCell($cellIndex + 1);
+
+                if ($nextCell->getFill()->getStartColor() == $startColor) { //if th next cell contains a letter, no white border to the right
+                    $right = false;
+                }
+            }
+            if (($cellIndex - 1) >= 0) { //check if we have a previous cell
+                $prevCell = $row->getCell($cellIndex - 1);
+
+                if ($prevCell->getFill()->getStartColor() == $startColor) { //if th next cell contains a letter, no white border to the right
+                    $left = false;
+                }
+            }
+
+            if (($rowIndex + 1) < count($tableRows)) { //check if we are on the last row of the table
+                $nextRow = $tableShape->getRow($rowIndex + 1);
+                $nextRowCell = $nextRow->getCell($cellIndex);
+
+                if ($nextRowCell->getFill()->getStartColor() == $startColor) { //if the cell under the current one has a letter, no white border in the bottom 
+                    $bottom = false;
+                }
+            }
+            if (($rowIndex - 1) >= 0) { //check if we have a row before
+                $prevRow = $tableShape->getRow($rowIndex - 1);
+                $prevRowCell = $prevRow->getCell($cellIndex);
+
+                if ($prevRowCell->getFill()->getStartColor() == $startColor) { //if the cell over the current one has a letter, no white border in the top 
+                    $top = false;
+                }
+            }
+
+            if ($left) {
+                $borders->getLeft()->setLineWidth(0);
+            }
+            if ($top) {
+                $borders->getTop()->setLineWidth(0);
+            }
+            if ($right) {
+                $borders->getRight()->setLineWidth(0);
+            }
+            if ($bottom) {
+                $borders->getBottom()->setLineWidth(0);
+            }
+
+            $cell->setBorders($borders);
+        }
     }
-
-
+}
 
 
 
