@@ -15,51 +15,25 @@ class SkeletonPuzzleMaker
 	private $skeleton;
 
 
-	public function __construct($width, $height, $words)
+	public function __construct($width, $height, $words, $teluguWords = [])
 	{
 		require_once("Skeleton.php");
 
 		$startTime = time();
-		$endTime = $startTime + 4;
+		$endTime = $startTime + 15;
 		$this->endTime = $endTime;
 		$this->wordList = $words;
 		$this->width = $width;
 		$this->height = $height;
 
 
-		// Create first puzzle
-		$puzzle1 = new Skeleton($width, $height, $words, 0);
-		$this->skeleton = $puzzle1;
+		// Create a puzzle
+		$puzzle = new Skeleton($width, $height, $words, 0, $teluguWords);
+		$this->skeleton = $puzzle;
 
-		// For the following puzzles, if they score higher than the first one, set them as the final skeleton
-		$puzzle2 = new Skeleton($width, $height, $words, 1);
-		if ($puzzle2->getScore() > $this->skeleton->getScore()) {
-			$this->skeleton = $puzzle2;
-		}
-
-		$puzzle3 = new Skeleton($width, $height, $words, 2);
-		if ($puzzle3->getScore() > $this->skeleton->getScore()) {
-			$this->skeleton = $puzzle3;
-		}
-
-		$puzzleCount = 0;
-		$currentTime = time();
-		while ($currentTime < $endTime) {
-			$puzzle4 = new Skeleton($width, $height, $words, 3);
-			if ($puzzle4->getScore() > $this->skeleton->getScore()) {
-				$this->skeleton = $puzzle4;
-			}
-
-			$currentTime = time();
-			$puzzleCount++;
-		}
-
-		// Generate puzzle based on best skeleton
+		
 		$this->skeleton->generatePuzzle();
 	}
-
-
-
 	public function getCharacters()
 	{
 		return $this->skeleton->getCharacters();

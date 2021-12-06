@@ -1,5 +1,5 @@
 <?php
-
+set_time_limit(500);
 require_once("SkeletonPuzzleMaker.php");
 
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
@@ -26,65 +26,217 @@ if ($subtitle == "" || $subtitle == null) {
 
 // Create an array of words pair
 $words = generateWordList($wordList);
-$shuffledWords = $words;
-
-
-
+shuffle($words);
 $height = 10;
 $width = 10;
 
-
-
-
 $puzzles = [];
 $unplacedWords = [];
-// Creates a few Skeleton Puzzles and then keeps the one with the most placed words
 
-if ($multi == 'true') {
-	$start_time = time();
-	while (count($shuffledWords) > 1 && (time() - $start_time) < 20) { //setting a timeout of 20 seconds
-
-		$threeRandomWords = getThreeRandomWords($shuffledWords);
-
-		$skeletonMaker = new SkeletonPuzzleMaker($width, $height, $threeRandomWords);
-
-		$unplacedWords = $skeletonMaker->getUnplacedWords();
-
-		$telugu = $skeletonMaker->getIfTelugu();
-
-		if ($telugu) {
-
-			if (count($unplacedWords) <= 1) {
-
-				$puzzles[] = $skeletonMaker;
-				$shuffledWords = array_merge($shuffledWords, $skeletonMaker->getUnplacedWords());
-			} else {
-				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
-			}
-		} else {
-
-			if (empty($unplacedWords)) {
-
-				$puzzles[] = $skeletonMaker;
-			} else {
-				$shuffledWords = array_merge($shuffledWords, $threeRandomWords);
-			}
-		}
-		}
-	$unplacedWords = $shuffledWords;
-	//$shuffledWord contains the words that could not be placed in any puzzle
-} else {
-	$threeRandomWords = getThreeRandomWords($shuffledWords);
-	$skeletonMaker = new SkeletonPuzzleMaker($width, $height, $threeRandomWords);
-	$puzzles[] = $skeletonMaker;
-
-	$unplacedWords = $skeletonMaker->getUnplacedWords();
+$isTelugu = isTelugu($words[0]);
+$teluguDictionary = [];
+if ($isTelugu) {
+	$teluguDictionary = getTeluguCharacters($words); //contains for each telugu word, the list of the characters of the word
 }
 
+$intersectionCharList = [];
+$intersectionList = generateIntersectionList($words, $isTelugu, $teluguDictionary);
 
-// Generates the word list for words paired with hints
-// Splits word from hint by taking the sides from the first comma, then trims extra space from each
-// Returns array in format word[i][0] = word, word[i][1] = hint
+sortWordList($intersectionList);
+
+if ($multi == 'true') { //multiple skeletons generation
+	$threeWords = getThreeWords($intersectionList, $isTelugu, $teluguDictionary);
+
+	while (!empty($threeWords)) {
+		$skeletonMaker = new SkeletonPuzzleMaker($width, $height, $threeWords, $teluguDictionary);
+		$puzzles[] = $skeletonMaker;
+		$threeWords = getThreeWords($intersectionList, $isTelugu, $teluguDictionary);
+	}
+} else { //single skeleton generation
+	$threeWords = getThreeWords($intersectionList, $isTelugu, $teluguDictionary);
+	if (!empty($threeWords)) {
+		$skeletonMaker = new SkeletonPuzzleMaker($width, $height, $threeWords, $teluguDictionary);
+		$puzzles[] = $skeletonMaker;
+	}
+}
+$unplacedWords = $intersectionList;
+
+
+function generateIntersectionList($words, $isTelugu, $teluguDictionary)
+{
+	$intersectionList = [];
+	//the intersectionList will be like: 'word'->['matchedWord,'commonLetter'];
+
+	foreach ($words as $word) {
+		$intersectionList[$word] = [];
+	}
+
+
+	for ($i = 0; $i < count($words); $i++) {  //for every word
+		$currentWordCharacters = [];
+		if ($isTelugu) {
+			$currentWordCharacters = $teluguDictionary[$words[$i]];
+		} else {
+			$currentWordCharacters = str_split($words[$i]);
+		}
+
+		$currentWord = $words[$i];
+		foreach ($currentWordCharacters as $character) { //for every character in the word
+			for ($j = 0; $j < count($words); $j++) { //for each word in the list, add it to the list of words the current word has an intersection with
+				$comparingWord = $words[$j];
+
+				if ($i != $j) { //exclude the current selected word
+					if ($isTelugu) {
+						if (in_array($character, $teluguDictionary[$comparingWord])) { //if we find a character match, add it to the list
+
+							$intersectionList[$currentWord][$comparingWord][] = $character;
+						}
+					} else {
+						if (strpos($comparingWord, $character) !== false) { //if we find a character match, add it to the list
+
+							$intersectionList[$currentWord][$comparingWord][] = $character;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return $intersectionList;
+}
+
+function sortWordList(&$intersectionList)
+{
+	arsort($intersectionList);
+}
+function getThreeWords(&$intersectionList, $isTelugu, $teluguDictionary)
+{
+
+	$words = array_keys($intersectionList);
+	$resultWords = [];
+	foreach ($intersectionList as $word => $intersections) {
+		$resultWords = [];
+		$firstWord = $word;
+		$resultWords[$word] = $intersections;
+		if (count($intersections) > 0) {
+			foreach ($intersections as $word => $char) {
+				$secondWord = $word;
+				$secondWordIntersections = $intersectionList[$secondWord];
+
+
+				$excludeSameCharacter = true;
+
+				foreach ($intersectionList[$firstWord][$secondWord] as $character) {
+					if ($isTelugu) {
+						$characters = array_merge($teluguDictionary[$firstWord], $teluguDictionary[$secondWord]);
+					} else {
+						//merge first and second word characters, if the character in common exists only two times (one per word) then the third word must have a different character
+						$characters = $firstWord . $secondWord;
+						if (substr_count($characters, $character) > 2) {
+							$excludeSameCharacter = false;
+							break;
+						}
+					}
+				}
+
+				foreach ($secondWordIntersections as $word => $char) {
+
+					if ($excludeSameCharacter) {
+						if (
+							$word != $firstWord
+							&& $intersectionList[$firstWord][$secondWord] != $intersectionList[$secondWord][$word]
+						) {
+							$thirdWord = $word;
+							$resultWords[$secondWord] = $intersectionList[$secondWord];
+							$resultWords[$thirdWord] = $intersectionList[$thirdWord];
+
+							//remove all the words used from the original list
+							unset($intersectionList[$firstWord]);
+							unset($intersectionList[$secondWord]);
+							unset($intersectionList[$thirdWord]);
+
+							$words = array_keys($intersectionList);
+
+							foreach ($words as $word) {
+
+								unset($intersectionList[$word][$firstWord]);
+								unset($intersectionList[$word][$secondWord]);
+								unset($intersectionList[$word][$thirdWord]);
+							}
+							return $resultWords;
+						}
+					} else {
+						if ($word != $firstWord) {
+							$thirdWord = $word;
+							$resultWords[$secondWord] = $intersectionList[$secondWord];
+							$resultWords[$thirdWord] = $intersectionList[$thirdWord];
+
+							//remove all the words used from the original list
+							unset($intersectionList[$firstWord]);
+							unset($intersectionList[$secondWord]);
+							unset($intersectionList[$thirdWord]);
+
+							$words = array_keys($intersectionList);
+
+							foreach ($words as $word) {
+
+								unset($intersectionList[$word][$firstWord]);
+								unset($intersectionList[$word][$secondWord]);
+								unset($intersectionList[$word][$thirdWord]);
+							}
+							return $resultWords;
+						}
+					}
+				}
+			}
+		}
+	}
+	return [];
+}
+
+function getTeluguCharacters($wordList)
+{
+	$joinedString = join(',', $wordList);
+
+
+	$url = 'https://indic-wp.thisisjava.com/api/getLogicalChars.php';
+
+	// http_build_query builds the query from an array
+	$query_array = array(
+		'string' => $joinedString,
+		'language' => 'Telugu'
+	);
+
+	$query = http_build_query($query_array);
+
+	$response = file_get_contents($url . '?' . $query);
+	$response = preg_split('@(?={)@', $response)[1]; //remove weird characters from the start of the response, otherwise we can't decode the response.
+	$response = json_decode($response); //convert the JSON response into an object
+	$splittedWords = $response->data;
+
+	$dictionary = [];
+
+	$wordIndex = 0;
+	foreach ($splittedWords as $item) {
+		if ($item != ',') {
+			$dictionary[$wordList[$wordIndex]][] = $item;
+		} else {
+			$wordIndex++;
+		}
+	}
+	return $dictionary;
+}
+
+function isTelugu($word)
+{
+	if (preg_match("/^[A-Za-z]+$/", $word)) { //if the word is  alphabetical then we assume it's not Telugu
+		return false;
+	} else {
+		return true;
+	}
+}
+
+// Generates the word list from input words 
 function generateWordList($wordInput)
 {
 
@@ -102,26 +254,13 @@ function generateWordList($wordInput)
 	return $words;
 }
 
-function getThreeRandomWords(&$wordList)
-{
-	shuffle($wordList);
-	$elements = [];
-	for ($i = 0; $i < 3; $i++) {
-		if (!empty($wordList)) {
-			array_push($elements, array_pop($wordList));
-		} else {
-			break;
-		}
-	}
-
-	return $elements;
-}
 
 $skeletons = [];
 foreach ($puzzles as $puzzle) {
 	$skeleton = new stdClass();
 	$skeleton->puzzle = $puzzle->getPuzzle();
 	$skeleton->solution = $puzzle->getSolution();
+	$skeleton->characters = $puzzle->getCharacters();
 	array_push($skeletons, $skeleton);
 }
 
@@ -148,10 +287,13 @@ foreach ($puzzles as $puzzle) {
 </head>
 
 <body>
+
+
 	<div class="container">
+
 		<div class="row">
 			<div class="col-12">
-			<div class="mx-4 py-3 text-center">
+				<div class="mx-4 py-3 text-center">
 					<button class="btn btn-primary" id="generatePPT">Generate PPT</button>
 				</div>
 
@@ -181,8 +323,8 @@ foreach ($puzzles as $puzzle) {
 					</div>
 
 				</div>
-				<?php foreach ($puzzles as $puzzle) : ?>
 
+				<?php foreach ($puzzles as $puzzle) : ?>
 
 					<div class="card border-primary mb-3">
 						<div class="card-header bg-primary text-center py-4">
@@ -303,7 +445,7 @@ foreach ($puzzles as $puzzle) {
 					<div class="border-red p-3">
 						<div class="row text-center">
 							<?php
-							foreach ($unplacedWords as $word) {
+							foreach ($unplacedWords as $word => $intersections) {
 								echo '<span class="d-block">' . $word . '</span>';
 							} ?>
 						</div>
@@ -316,10 +458,8 @@ foreach ($puzzles as $puzzle) {
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 	<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 	<script type="text/javascript" src="js/spectrum.js"></script>
-	
-	<!-- //Comment out html 2 canvas lib extention -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js" integrity="sha512-tVYBzEItJit9HXaWTPo8vveXlkK62LbA+wez9IgzjTmFNLMBO1BEYladBw2wnM3YURZSMUyhayPCoLtjGh84NQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>						
-	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js" integrity="sha512-tVYBzEItJit9HXaWTPo8vveXlkK62LbA+wez9IgzjTmFNLMBO1BEYladBw2wnM3YURZSMUyhayPCoLtjGh84NQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 	<script>
 		// save all the skeleton data to a js variable to send to the server
 		const data = <?= json_encode($skeletons);  ?>

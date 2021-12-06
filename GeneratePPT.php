@@ -59,19 +59,19 @@ foreach ($skeletons as $i => $skeleton) {
 
     // Create a shape (table)
     $tableShape = $currentSlide->createTableShape($columns_count); //number of columns
-    $tableShape->setHeight(50 * $rows_count);
-    $tableShape->setOffsetX((960 - $columns_count * 50) / 2);
+    $tableShape->setHeight(30 * $rows_count);
+    $tableShape->setOffsetX((960 - $columns_count * 30) / 2);
     $tableShape->setOffsetY(200);
 
 
     foreach ($rows as $i => $row) {
         // Add row
         $tableRow = $tableShape->createRow();
-        $tableRow->setHeight(50);
+        $tableRow->setHeight(30);
 
         foreach ($row as $k => $col) {
             $oCell = $tableRow->nextCell();
-            $oCell->setWidth(50);
+            $oCell->setWidth(30);
             if ($col === 0){
             } else {
 
@@ -82,7 +82,7 @@ foreach ($skeletons as $i => $skeleton) {
             $textRun = $oCell->createTextRun('');
             $textRun->getFont()
                 ->setBold(true)
-                ->setSize(20);
+                ->setSize(14);
 
             $oCell->getActiveParagraph()
                 ->getAlignment()
@@ -91,6 +91,36 @@ foreach ($skeletons as $i => $skeleton) {
         }
     }
     setCellsBorders($tableShape);
+
+    //Character list title 
+$textShape = $currentSlide->createRichTextShape();
+$textShape
+    ->setHeight(100)
+    ->setWidth(200)
+    ->setOffsetX(10)
+    ->setOffsetY(550);
+$textShape->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+$textRun = $textShape->createTextRun('Characters');
+$textRun->getFont()
+    ->setBold(true)
+    ->setSize(20)
+    ->setColor(new Color('FF000000'));
+
+//Character list
+$textShape = $currentSlide->createRichTextShape();
+$textShape
+    ->setHeight(100)
+    ->setWidth(800)
+    ->setOffsetX(10)
+    ->setOffsetY(600);
+$textShape->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+$textRun = $textShape->createTextRun(implode(" ", $skeleton->characters));
+$textRun->getFont()
+    ->setSize(16)
+    ->setColor(new Color('FF000000'));
+
+
 }
 foreach ($skeletons as $i => $skeleton) {
     // Create slide
@@ -120,24 +150,24 @@ foreach ($skeletons as $i => $skeleton) {
         // Create a shape (table)
 
         $tableShape = $currentSlide->createTableShape($columns_count); //number of columns
-        $tableShape->setHeight(50 * $rows_count);
-        $tableShape->setOffsetX((960 - $columns_count * 50) / 2);
+        $tableShape->setHeight(30 * $rows_count);
+        $tableShape->setOffsetX((960 - $columns_count * 30) / 2);
         $tableShape->setOffsetY(200);
     
     
         foreach ($rows as $i => $row) {
             // Add row
             $tableRow = $tableShape->createRow();
-            $tableRow->setHeight(50);
+            $tableRow->setHeight(30);
     
             foreach ($row as $k => $col) {
                 $oCell = $tableRow->nextCell();
-                $oCell->setWidth(50);
+                $oCell->setWidth(30);
                 if ($col === 0) {
 
                     $textRun = $oCell->createTextRun(' ');
                     $textRun->getFont()
-                        ->setSize(20);
+                        ->setSize(14);
 
                     
                 } else {
@@ -147,7 +177,7 @@ foreach ($skeletons as $i => $skeleton) {
                     ->setEndColor(new Color('FFEEEEEE'));
                 $textRun = $oCell->createTextRun($col);
                 $textRun->getFont()
-                    ->setSize(20);
+                    ->setSize(14);
 
                 }
 

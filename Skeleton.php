@@ -25,10 +25,7 @@ class Skeleton
 	private $puzzle = [];
 	private $placedLetters = [];
 	private $characterList = [];	//add a character list 
-	private $firstWordSetting = 1;
-	private $directions = array("right", "down");
-
-
+	
 	// private $wordProcessor;
 
 	//Setting Telugu to false and creating a Telugu list
@@ -41,28 +38,25 @@ class Skeleton
 	*/
 
 	//Constructor 
-	public function __construct($width, $height, $wordList, $type)
+	public function __construct($width, $height, $wordList, $type, $teluguWords = [])
 	{
 		// Set starting values
 
 		$this->width = $width;
 		$this->height = $height;
 		$this->firstWordSetting = $type;
-		//removal of wordProcessor and using wordlist instead.
 		$this->wordList = $wordList;
+		$this->teluguWords = $teluguWords;
 
-		//Checking for Telugu characters
-		if (!preg_match("/^[A-Za-z]+$/", $wordList[0])) { //if the word is not alphabetical then we assume it's in Telugu
+		if ($teluguWords != []) {
 			$this->telugu = true;
-			$this->getTeluguCharacters();
 		} else {
 			$this->telugu = false;
 		}
-		//shuffle intial words
+
 		$this->shuffleCharacters();
 		// Adjust grid size based off longest word in case grid is too small
 		$this->adjustGridSize();
-
 
 		// Create an empty board
 		$this->generateBoard($this->width, $this->height);
@@ -72,38 +66,30 @@ class Skeleton
 	}
 
 
-	function getTeluguCharacters()
-	{
-		foreach ($this->wordList as $word) {
-			$response = file_get_contents("https://indic-wp.thisisjava.com/api/getLogicalChars.php?string=" . $word . '&' . "language=Telugu");
-			$response = preg_split('@(?={)@', $response)[1]; //remove Telugu characters from the start of the response, otherwise we can't decode the response.
-			$response = json_decode($response); //convert the JSON response into an object
-			$splittedWord = $response->data;
-			$this->teluguWords[$word] = $splittedWord;
-		}
-	}
 
-	//Method to combine the keys and valus of an array to find it's longest string.
 	function getLongestStringInArray($array)
 	{
 		$mapping = array_combine($array, array_map('strlen', $array));
 		return array_keys($mapping, max($mapping));
 	}
 	/*
-	 * Adjust gridsize based off the longest word but checking for Telugu words first.
+	 * Adjust gridsize based off the longest word
 	 */
 
-	
+
 	private function adjustGridSize()
 	{
+		$maxlen = 0;
 		//get the longest word length from the list of words given
 		if ($this->telugu) {
-
-			$maxlen = max(array_map('count', array_values($this->teluguWords)));
+			$lenght = 0;
+			foreach ($this->wordList as $word => $intersections) {
+				$maxlen = $lenght < count($this->teluguWords[$word]) ? count($this->teluguWords[$word]) : $lenght;
+			}
 		} else {
-			$maxlen = max(array_map('strlen', $this->wordList));
+			$maxlen = max(array_map('strlen', array_keys($this->wordList)));
 		}
-
+		$maxlen = $maxlen * 3;
 		if ($maxlen > $this->width) {
 			$this->width = $maxlen;
 		}
@@ -113,22 +99,21 @@ class Skeleton
 		}
 	}
 
-	//function to split words into character list array and then shuffle them. Checking for Telugu chars first. 
+
 	private function shuffleCharacters()
 	{
 		$characterList = [];
 
 
 		if ($this->telugu) {
-			foreach ($this->teluguWords as $word => $characters) {
-				$characterList = array_merge($characterList, $characters); //combine telugu chars into characterList arrays.
+
+			foreach ($this->wordList as $word => $intersections) {
+				$characterList = array_merge($characterList, $this->teluguWords[$word]);
 			}
 		} else {
 
-			foreach ($this->wordList as $word) {
-				$chars = str_split($word); //convert string words into character array
-
-
+			foreach ($this->wordList as $word => $intersections) {
+				$chars = str_split($word);
 				foreach ($chars as $char) {
 					array_push($characterList, $char);
 				}
@@ -159,447 +144,110 @@ class Skeleton
 	 */
 	private function generateSolution()
 	{
+
+
 		// Create a temporary word list for solution generation
 		$words = $this->wordList;
+		$keys = array_keys(($this->wordList));
+		$firstWord = '';
+		$firstWordIntersections = [];
 
-		$placeLocation = [];
-
-		// Place first word
-		$placeLocation = $this->placeFirstWord($words[0]);
-		$this->placeWord($words[0], $placeLocation);
-
-		// Remove first word from word list
-		unset($words[0]);
-		array_values($words);
-
-		// start loop for placing words
-		// loop is done once it goes through a whole iteration without adding a word
-		$done = false;
-		while (!$done) {
-			// Set done to true - will change to false if a word is placed
-			$done = true;
-
-			// Create a temp list to go through
-			$placingWordList = $words;
-
-			// Attempt to place each remaining word
-			foreach ($placingWordList as $key => $word) {
-
-				// Attempt to find a placeable location for the current word
-				// If a location is found it is returned as [0] = row, [1] = column
-				// If no location found then false is returned
-				$placeLocation = $this->findOpenLocation($word);
-
-				if ($placeLocation != false) {
-					// Place the word in the found location
-					$this->placeWord($word, $placeLocation);
-
-					// Remove from word list
-					unset($words[$key]);
-					array_values($words);
-
-					// Set done to false to continue through another loop
-					$done = false;
+		foreach ($words as $word => $intersections) {
+			$wordIntersections = [];
+			foreach ($intersections as $interWord => $char) {
+				if (in_array($interWord, $keys)) {
+					$wordIntersections[$interWord] = $char;
 				}
 			}
+			$words[$word] = $wordIntersections;
 		}
 
-		$this->unplacedWordList = $words;
-	}
-
-	/*
-	 * Places first word based off the firstWordSetting passed in on Skeleton initialization.
-	 * 0 = place first word at cell (0, 0) on the grid going across
-	 * 1 = place first word at cell (0, 0) on the grid going down
-	 * 2 = place first word on the last row going across at last available position
-	 * 3 = place first word in random direction in a random cell
-	 */
-	private function placeFirstWord($word)
-	{
-		$placeLocation = [];
-		$length = $this->getWordLength($word);
-
-		// Place word going across at spot 0, 0
-		if ($this->firstWordSetting == 0) {
-			$row = 0;
-			$col = 0;
-			$direction = "right";
-		} else if ($this->firstWordSetting == 1) {
-			$row = 0;
-			$col = 0;
-			$direction = "down";
-		} else if ($this->firstWordSetting == 2) {
-			$row = $this->height - 1;
-			$col = $this->width - $length;
-			$direction = "right";
-		} else {
-			$direction = rand(0, 1);
-
-			if ($direction == 0) {
-				$row = rand(0, $this->height - 1);
-				$col = rand(0, $this->width - $length);
-				$direction = "right";
-			} else {
-				$direction = "down";
-				$row = rand(0, $this->height - $length);
-				$col = rand(0, $this->width - 1);
-			}
-		}
-
-		$placeLocation[0] = $row;
-		$placeLocation[1] = $col;
-		$placeLocation[2] = $direction;
-
-		return $placeLocation;
-	}
-
-	/*
-	 * Takes an input word, splits into letters, and then checks each letter placed on the grid to the letters of the word.
-	 * If there is a match, then check to see if the word can be placed from a given starting position.
-	 * First loop checks across, the second loop checks down.
-	 * If the word can be placed, then return the starting position with [0] as row, [1] as column, [2] as direction.
-	 * Else the word can't be placed on the grid then return false.
-	 */
-	private function findOpenLocation($word)
-	{
-		// Get length and split word into letters
-		$wordLength = $this->getWordLength($word);
-		$wordLetters = $this->splitWord($word);
-
-
-		// Iterate through list of all placed letters and check to see if they exist in the word
-		foreach ($this->placedLetters as $loc) {
-			$placedLetter = $loc[0];
-			$row = $loc[1];
-			$col = $loc[2];
-
-			// Create an array of each time the letter is found in the word
-			$foundLetters = [];
-			$foundLetters = array_keys($wordLetters, $placedLetter);
-
-
-			if (count($foundLetters) !== 0) {
-				// Check if word can be placed for each time the letter appears in the word
-				// Ex: 'p' in Apple will be checked in the 1 and 2 positions
-				foreach ($foundLetters as $letterPosition) {
-
-					// Loop for each direction in the directions list (right, down)
-					foreach ($this->directions as $dir) {
-
-						// Get starting cell position based on direction and letter position in the word
-						$startingCell = $this->getStartCell($letterPosition, $row, $col, $dir);
-
-						// If cell is not out of bounds, continue
-						if (!$this->ifOutOfBounds($startingCell)) {
-
-							// Check if there's an intersection with another word
-							// If no intersection, set to true, and loop for each letter in the word to see if it can be placed
-							$checkingWordPlacement = !($this->checkIfWordIntersection($word, $startingCell, $dir));
-
-							// Loop for each letter in the word and see if it can be placed on the grid.
-							// If that letter can't be placed then break the loop
-							$i = 0;
-							while (($checkingWordPlacement) && ($i < $wordLength)) {
-								$checkingWordPlacement = $this->checkWordPlacement($i, $wordLetters, $startingCell, $dir);
-								$i++;
-							}
-
-							// If the letters can be placed, check to see if the word can be placed
-							if ($checkingWordPlacement) {
-
-								// Check to see if the word has already been placed in that location. If so then don't place.
-								// Example being if the same word is passed in twice then prevent it from being placed in the same location
-								$ifDuplicate = $this->checkIfDuplicateWord($wordLetters, $startingCell, $dir);
-
-								// Word can be placed - return array of row, col, and direction values
-								if (!$ifDuplicate) {
-									$startingCell[2] = $dir;
-									return $startingCell;
-								}
-							}
+		foreach ($words as $word => $intersections) {
+			if (count($intersections) == 2) {
+				$wordKeys = array_keys($intersections);
+				foreach ($intersections[$wordKeys[0]] as $char) {
+					foreach ($intersections[$wordKeys[1]] as $comparingChar) {
+						if ($char != $comparingChar) {
+							$words[$word][$wordKeys[0]] =  $char;
+							$words[$word][$wordKeys[1]] = $comparingChar;
+							$firstWord = $word;
+							$firstWordIntersections = $words[$firstWord];
+							break 2;
 						}
 					}
 				}
 			}
 		}
-		// Word cannot be placed - return false
-		return false;
-	}
 
-	/*
-	 * Method for getting the starting cell based off the word, position of found letter in the word,
-	 * the location of the already placed letter, and the direction.
-	 * Returns startingPosition as [0] row and [1] col.
-	 */
-	private function getStartCell($pos, $row, $col, $dir)
-	{
-		$startingPosition = [];
-		if ($dir == "right") {
-			$startingPosition[0] = $row;
-			$startingPosition[1] = $col - $pos;
+
+		// $directions = ['right', 'down'];
+		$col = 0;
+		$row = 0;
+
+		// $randomIndex = rand(0, 1);
+		// $dir = $directions[$randomIndex];
+
+		$dir = 'down';
+		if ($dir == 'right') {
+			foreach ($firstWordIntersections as $word => $char) {
+				if ($this->telugu) {
+					$charPosition = array_search($char, $this->teluguWords[$word]);
+				} else {
+					$charPosition = strpos($word, $char);
+				}
+
+				$row = $row < $charPosition ? $charPosition : $row;
+			}
 		} else {
-			$startingPosition[0] = $row - $pos;
-			$startingPosition[1] = $col;
-		}
-
-		return $startingPosition;
-	}
-
-	private function ifOutOfBounds($cellPos)
-	{
-		if ($cellPos[0] < 0 || $cellPos[1] < 0) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/* 
-	 * Checks to see if there will be an intersection with another word based on the starting location and direction.
-	 * An intersection would include going in the same direction as another word and either riding on it or clashing into it.
-	 * Example: Prevent the word Dog from being placed before the word Good in the same direction (d o g o o d)
-	 * If across, then check the space to the right and left of the start/end positions
-	 * If down, then check the up and down spots of the start/end positions
-	 * Return true if there's an intersection, false if no intersection
-	 */
-	private function checkIfWordIntersection($word, $startingCell, $dir)
-	{
-		$length = $this->getWordLength($word);
-
-		if ($dir == "right") {
-			// Letter before start location
-			$letter1 = $this->getLetterLeft($startingCell[0], $startingCell[1]);
-			// Letter after end location
-			$letter2 = $this->getLetter($startingCell[0], $startingCell[1] + $length);
-		} else {
-			// Letter before start location
-			$letter1 = $this->getLetterUp($startingCell[0], $startingCell[1]);
-			// Letter after end location
-			$letter2 = $this->getLetter(($startingCell[0] + $length), $startingCell[1]);
-		}
-
-		// Return true if letter1 or letter2 is not 0 or null
-		return !(($letter1 == "0" || is_null($letter1)) && ($letter2 == "0" || is_null($letter2)));
-	}
-
-	/*
-	 * Method for checking to see if a given letter can be placed in a given cell.
-	 * Logic is handled based off the direction, start location and letter position in word, 
-	 * and what is happening in adjacent cells.
-	 * Returns true if the letter can be placed or false if it can't.
-	 */
-	private function checkWordPlacement($pos, $wordLetters, $startingPosition, $dir)
-	{
-		$cell = array();
-		$canBeUsed = false;
-
-		// Set current placement cell based on position of the letter
-		if ($dir == "right") {
-			$cell[0] = $startingPosition[0];
-			$cell[1] = $startingPosition[1] + $pos;
-		} else {
-			$cell[0] = $startingPosition[0] + $pos;
-			$cell[1] = $startingPosition[1];
-		}
-
-		// Get the current letter in the placement cell
-		$cellLetter = $this->getLetter($cell[0], $cell[1]);
-		$wordLetter = $wordLetters[$pos];
-
-		// If the letter is the same then the cell can be used
-		if ($cellLetter === $wordLetter) {
-			$canBeUsed = true;
-		}
-		// If letters aren't the same then the cell can't be used
-		else if ($cellLetter != "0") {
-			$canBeUsed = false;
-		} else {
-			// Check if the cell can be used based off whether it is the first, middle, or last letter being placed
-			// Start of word
-			if ($pos === 0) {
-				if ($cellLetter == "0") {
-					$canBeUsed = $this->checkOpenStartLetter($cell[0], $cell[1], $dir);
+			foreach ($firstWordIntersections as $word => $char) {
+				if ($this->telugu) {
+					$charPosition = array_search($char, $this->teluguWords[$word]);
+				} else {
+					$charPosition = strpos($word, $char);
 				}
+				$col = $col < $charPosition ? $charPosition : $col;
 			}
-			// Middle of the word
-			else if ($pos !== (count($wordLetters) - 1)) {
-				if ($cellLetter == "0") {
-					$canBeUsed = $this->checkOpenMiddleLetter($cell[0], $cell[1], $dir);
+		}
+		$placeLocation = [$row, $col, $dir];
+
+		$this->placeWord($firstWord, $placeLocation);
+
+		foreach ($keys as $word) {
+			if ($word != $firstWord) {
+
+
+				$char = $words[$firstWord][$word];
+				if ($dir == 'right') {
+					if ($this->telugu) {
+						$wordCol = array_search($char, $this->teluguWords[$firstWord]);
+						$wordRow = $row - array_search($char, $this->teluguWords[$word]);
+					} else {
+						$wordCol = strpos($firstWord, $char);
+						$wordRow = $row - strpos($word, $char);
+					}
+
+					$wordDir = 'down';
+				} else {
+					if ($this->telugu) {
+						$wordCol = $col - array_search($char, $this->teluguWords[$word]);
+						$wordRow = array_search($char, $this->teluguWords[$firstWord]);
+					} else {
+						$wordCol = $col - strpos($word, $char);
+						$wordRow = strpos($firstWord, $char);
+					}
+					$wordDir = 'right';
 				}
-			}
-			// End of word
-			else {
-				if ($cellLetter == "0") {
-					$canBeUsed = $this->checkOpenEndLetter($cell[0], $cell[1], $dir);
-				}
+
+				$this->placeWord($word, [$wordRow, $wordCol, $wordDir]);
 			}
 		}
 
-		return $canBeUsed;
+
+
+		$this->unplacedWordList = [];
 	}
 
-	/*
-	 * Method for checking if a words first letter can be placed in a given cell based off the words direction if it's an open placement.
-	 * Returns false if letter can't be placed or true if it can.
-	 */
-	private function checkOpenStartLetter($row, $col, $dir)
-	{
-		// Check up, left, and down for null or 0 values
-		if ($dir == "right") {
-			$spaceLetter = $this->getLetterUp($row, $col);
 
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterDown($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterLeft($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-		// Check Up, Left, and Right for null or 0 values
-		else {
-			$spaceLetter = $this->getLetterUp($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterRight($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterLeft($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/*
-	 * Method for checking if a words middle letters can be placed in a given cell based off the words direction if it's an open placement.
-	 * Returns false if letter can't be placed or true if it can.
-	 */
-	private function checkOpenMiddleLetter($row, $col, $dir)
-	{
-		// Check up and down for null or 0 values
-		if ($dir == "right") {
-			$spaceLetter = $this->getLetterUp($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterDown($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-		// Check left and right for for null or 0 values
-		else {
-			$spaceLetter = $this->getLetterRight($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterLeft($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/*
-	 * Method for checking if a word's last letter can be placed in a given cell based off the words direction if it's an open placement.
-	 * Returns false if letter can't be placed or true if it can.
-	 */
-	private function checkOpenEndLetter($row, $col, $dir)
-	{
-		// Check up, down, and right for null or 0 values
-		if ($dir == "right") {
-			$spaceLetter = $this->getLetterUp($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterDown($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterRight($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-		// Check down, left, and right for null or 0 values
-		else {
-			$spaceLetter = $this->getLetterDown($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterRight($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-
-			$spaceLetter = $this->getLetterLeft($row, $col);
-
-			if ($spaceLetter != 0 || $spaceLetter != null) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/*
-	 * Checks if there an idential word exists at the start section going in that direction.
-     * Returns true if there is, false if there isn't	 
-	 */
-	private function checkIfDuplicateWord($wordLetters, $startingCell, $dir)
-	{
-		$i = 0;
-
-		foreach ($wordLetters as $letter) {
-			if ($dir == "right") {
-				if ($letter !== ($this->solution[$startingCell[0]][$startingCell[1] + $i])) {
-					return false;
-				}
-			} else {
-				if ($letter !== ($this->solution[$startingCell[0] + $i][$startingCell[1]])) {
-					return false;
-				}
-			}
-
-			$i++;
-		}
-
-		return true;
-	}
 
 	/*
 	 * Creates a puzzle based off the generated solution.
@@ -729,7 +377,7 @@ class Skeleton
 
 	/*
 	 * Places word in passed in placeLocation: [0] row, [1] col, [2] dir.
-	 * Add each placed letter tot he placedLetters list.
+	 * Add each placed letter to the placedLetters list.
 	 * Add each placed word into either the placed lists for across or down words.
 	 * Increment score when a word is added.
 	 */
@@ -798,6 +446,8 @@ class Skeleton
 	 */
 	private function reduceGridSize()
 	{
+
+
 		// Delete columns first - otherwise issue happens where columns don't get deleted
 		// Fix would be in the count(array_unique()) line, but was easier to just remove columns first.
 
@@ -853,7 +503,6 @@ class Skeleton
 	private function getColumn($col)
 	{
 		$column = [];
-
 		for ($i = 0; $i < count($this->solution); $i++) {
 			array_push($column, $this->solution[$i][$col]);
 		}
@@ -887,55 +536,27 @@ class Skeleton
 
 
 
-	/*** Functions for cell values ***/
-
-	private function getLetterUp($row, $col)
+	/*** Word Processor Functions ***/
+	private function getWordLength($word)
 	{
-		if ($row != 0) {
-			return $this->solution[$row - 1][$col];
+		if ($this->telugu) {
+			return count($this->teluguWords[$word]);
 		} else {
-			return null;
+			return strlen($word);
 		}
 	}
 
-	private function getLetterDown($row, $col)
+	private function splitWord($word)
 	{
-		if ($row < ($this->height - 1)) {
-			return $this->solution[$row + 1][$col];
+		$splittedWord = "";
+		if ($this->telugu) {
+			$splittedWord = $this->teluguWords[$word];
 		} else {
-			return null;
+			$splittedWord = str_split($word);
 		}
+
+		return $splittedWord;
 	}
-
-	private function getLetterLeft($row, $col)
-	{
-		if ($col != 0) {
-			return $this->solution[$row][$col - 1];
-		} else {
-			return null;
-		}
-	}
-
-	private function getLetterRight($row, $col)
-	{
-
-		if ($col < ($this->width - 1)) {
-			return $this->solution[$row][$col + 1];
-		} else {
-			return null;
-		}
-	}
-
-	private function getLetter($row, $col)
-	{
-		if ($row >= 0 && $row < $this->height && $col >= 0 && $col < $this->width) {
-			return $this->solution[$row][$col];
-		} else {
-			return null;
-		}
-	}
-
-
 
 	/*** Getter functions ***/
 
@@ -976,28 +597,5 @@ class Skeleton
 	public function getIfTelugu()
 	{
 		return $this->telugu;
-	}
-
-	/*** Word Processor Functions ***/
-	private function getWordLength($word)
-	{
-		if ($this->telugu) {
-
-			return count($this->teluguWords[$word]);
-		} else {
-			return strlen($word);
-		}
-	}
-
-	private function splitWord($word)
-	{
-		$splittedWord = "";
-		if ($this->telugu) {
-			$splittedWord = $this->teluguWords[$word];
-		} else {
-			$splittedWord = str_split($word);
-		}
-
-		return $splittedWord;
 	}
 }
