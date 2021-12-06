@@ -1,5 +1,5 @@
 <?php
-set_time_limit(500);
+// set_time_limit(500);
 require_once("SkeletonPuzzleMaker.php");
 
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
