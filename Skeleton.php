@@ -24,11 +24,8 @@ class Skeleton
 	private $solution = [];
 	private $puzzle = [];
 	private $placedLetters = [];
-	private $characterList = [];	//add a character list 
-	
-	// private $wordProcessor;
+	private $characterList = [];
 
-	//Setting Telugu to false and creating a Telugu list
 	private $telugu = false;
 	private $teluguWords = [];
 
@@ -36,8 +33,6 @@ class Skeleton
 	 * Creates a solution upon creation.
 	 * A call to generatePuzzle() must be made to generate a puzzle based on the solution.
 	*/
-
-	//Constructor 
 	public function __construct($width, $height, $wordList, $type, $teluguWords = [])
 	{
 		// Set starting values
@@ -151,15 +146,22 @@ class Skeleton
 		$keys = array_keys(($this->wordList));
 		$firstWord = '';
 		$firstWordIntersections = [];
+		$chars = [];
+		$sameCharacterIntersection = false;
 
 		foreach ($words as $word => $intersections) {
 			$wordIntersections = [];
 			foreach ($intersections as $interWord => $char) {
 				if (in_array($interWord, $keys)) {
 					$wordIntersections[$interWord] = $char;
+					$chars = array_merge($chars, array_values($char));
 				}
 			}
 			$words[$word] = $wordIntersections;
+		}
+
+		if (count(array_unique($chars)) == 1) {
+			$sameCharacterIntersection = true;
 		}
 
 		foreach ($words as $word => $intersections) {
@@ -173,60 +175,66 @@ class Skeleton
 							$firstWord = $word;
 							$firstWordIntersections = $words[$firstWord];
 							break 2;
+						} else if ($sameCharacterIntersection) {
+							if ($this->telugu) {
+								$counts = array_count_values($this->teluguWords[$word]);
+								// $counts[$char];
+								if ($counts[$char] >= 2) {
+									$words[$word][$wordKeys[0]] =  $char;
+									$words[$word][$wordKeys[1]] = $comparingChar;
+									$firstWord = $word;
+									$firstWordIntersections = $words[$firstWord];
+									break 2;
+								}
+							} else {
+								if (substr_count($word, $char) >= 2) {
+									$words[$word][$wordKeys[0]] =  $char;
+									$words[$word][$wordKeys[1]] = $comparingChar;
+									$firstWord = $word;
+									$firstWordIntersections = $words[$firstWord];
+									break 2;
+								}
+							}
 						}
 					}
 				}
 			}
 		}
-
-
-		// $directions = ['right', 'down'];
 		$col = 0;
 		$row = 0;
-
-		// $randomIndex = rand(0, 1);
-		// $dir = $directions[$randomIndex];
-
 		$dir = 'down';
-		if ($dir == 'right') {
-			foreach ($firstWordIntersections as $word => $char) {
-				if ($this->telugu) {
-					$charPosition = array_search($char, $this->teluguWords[$word]);
-				} else {
-					$charPosition = strpos($word, $char);
-				}
 
-				$row = $row < $charPosition ? $charPosition : $row;
+		foreach ($firstWordIntersections as $word => $char) {
+			if ($this->telugu) {
+				$charPosition = array_search($char, $this->teluguWords[$word]);
+			} else {
+				$charPosition = strpos($word, $char);
 			}
-		} else {
-			foreach ($firstWordIntersections as $word => $char) {
-				if ($this->telugu) {
-					$charPosition = array_search($char, $this->teluguWords[$word]);
-				} else {
-					$charPosition = strpos($word, $char);
-				}
-				$col = $col < $charPosition ? $charPosition : $col;
-			}
+			$col = $col < $charPosition ? $charPosition : $col;
 		}
+
 		$placeLocation = [$row, $col, $dir];
 
 		$this->placeWord($firstWord, $placeLocation);
 
-		foreach ($keys as $word) {
+		unset($keys[array_search($firstWord, $keys)]);
+		$keys = array_values(array_filter($keys));
+
+		foreach ($keys as $i => $word) {
 			if ($word != $firstWord) {
-
-
 				$char = $words[$firstWord][$word];
-				if ($dir == 'right') {
+				if ($sameCharacterIntersection && $i == 1) {
 					if ($this->telugu) {
-						$wordCol = array_search($char, $this->teluguWords[$firstWord]);
-						$wordRow = $row - array_search($char, $this->teluguWords[$word]);
+						$keys = array_keys($this->teluguWords[$firstWord], $char);
+						$offset = $keys[1];
+						$wordCol = $col - array_search($char, $this->teluguWords[$word]);
+						$wordRow = $offset;
 					} else {
-						$wordCol = strpos($firstWord, $char);
-						$wordRow = $row - strpos($word, $char);
+						$pos1 = strpos($firstWord, $char);
+						$pos2 = strpos($firstWord, $char, $pos1 + 1);
+						$wordCol = $col - strpos($word, $char);
+						$wordRow = $pos2;
 					}
-
-					$wordDir = 'down';
 				} else {
 					if ($this->telugu) {
 						$wordCol = $col - array_search($char, $this->teluguWords[$word]);
@@ -235,9 +243,8 @@ class Skeleton
 						$wordCol = $col - strpos($word, $char);
 						$wordRow = strpos($firstWord, $char);
 					}
-					$wordDir = 'right';
 				}
-
+				$wordDir = 'right';
 				$this->placeWord($word, [$wordRow, $wordCol, $wordDir]);
 			}
 		}

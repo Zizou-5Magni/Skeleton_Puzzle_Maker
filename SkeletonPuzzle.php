@@ -26,6 +26,7 @@ if ($subtitle == "" || $subtitle == null) {
 
 // Create an array of words pair
 $words = generateWordList($wordList);
+$words = array_unique($words);
 shuffle($words);
 $height = 10;
 $width = 10;
@@ -198,32 +199,59 @@ function getTeluguCharacters($wordList)
 {
 	$joinedString = join(',', $wordList);
 
+	$strings = [];
+	$stringLength = strlen($joinedString);
+	if ($stringLength > 2500) {
+		$count = intdiv($stringLength, 2500);
+		$offset = 0;
+		for ($i = 0; $i <= $count; $i++) {
+			if (strlen($joinedString) > $offset + 2500) {
+				$splitPos = strpos($joinedString, ',', $offset + 2500);
+				if ($splitPos) {
+					$strings[$i] = substr($joinedString, $offset, ($splitPos) - $offset);
+					$offset = $splitPos;
+				} else {
+					$strings[$i] = substr($joinedString, $offset);
+					break;
+				}
+			} else {
+				$strings[$i] = substr($joinedString, $offset);
+				break;
+			}
+		}
+	} else {
+		$strings[] = $joinedString;
+	}
 
-	$url = 'https://indic-wp.thisisjava.com/api/getLogicalChars.php';
-
-	// http_build_query builds the query from an array
-	$query_array = array(
-		'string' => $joinedString,
-		'language' => 'Telugu'
-	);
-
-	$query = http_build_query($query_array);
-
-	$response = file_get_contents($url . '?' . $query);
-	$response = preg_split('@(?={)@', $response)[1]; //remove weird characters from the start of the response, otherwise we can't decode the response.
-	$response = json_decode($response); //convert the JSON response into an object
-	$splittedWords = $response->data;
 
 	$dictionary = [];
-
 	$wordIndex = 0;
-	foreach ($splittedWords as $item) {
-		if ($item != ',') {
-			$dictionary[$wordList[$wordIndex]][] = $item;
-		} else {
-			$wordIndex++;
+	foreach ($strings as $string) {
+		$url = 'https://indic-wp.thisisjava.com/api/getLogicalChars.php';
+
+		// http_build_query builds the query from an array
+		$query_array = array(
+			'string' => $string,
+			'language' => 'Telugu'
+		);
+
+		$query = http_build_query($query_array);
+
+		$response = file_get_contents($url . '?' . $query);
+		$response = preg_split('@(?={)@', $response)[1]; //remove weird characters from the start of the response, otherwise we can't decode the response.
+		$response = json_decode($response); //convert the JSON response into an object
+		$splittedWords = $response->data;
+
+		foreach ($splittedWords as $item) {
+			if ($item != ',') {
+				$dictionary[$wordList[$wordIndex]][] = $item;
+			} else {
+				$wordIndex++;
+			}
 		}
 	}
+
+
 	return $dictionary;
 }
 
@@ -246,7 +274,11 @@ function generateWordList($wordInput)
 	foreach ($lines as $line) {
 
 		$word = trim($line);
-
+		$word = str_replace(' ', '', $word);
+		$word = str_replace(';', '', $word);
+		$word = str_replace(',', '', $word);
+		$word = str_replace('.', '', $word);
+		$word = str_replace('-', '', $word);
 		if (!(empty($word))) {
 			array_push($words, $word);
 		}
